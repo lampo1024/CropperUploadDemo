@@ -1,0 +1,151 @@
+﻿@page
+@model IndexModel
+@{
+    ViewData["Title"] = "Home page";
+}
+<link href="~/lib/cropperjs/cropper.css" rel="stylesheet" />
+
+<style type="text/css">
+    img {
+        max-width: 100%; /* This rule is very important, please do not ignore this! */
+    }
+
+    .avatar-container {
+        width: 360px;
+        height: 360px;
+    }
+
+    .img-preview {
+        overflow: hidden;
+        width: 120px;
+        height: 120px;
+    }
+
+    .preview-md {
+        width: 320px;
+    }
+
+    .preview-sm {
+        width: 160px;
+    }
+
+    .preview-xs {
+        width: 80px;
+    }
+
+    #done {
+        width: 120px;
+        height: 120px;
+    }
+</style>
+<div>
+    <input type="file" id="file_input" />
+    <a class="btn btn-info btn-sm" id="btn_upload">上传</a>
+</div>
+<div class="text-center">
+    <div class="avatar-container">
+        <img id="image" src="~/img/001.jpg">
+    </div>
+    <div class="img-preview-container">
+        <div class="img-preview"></div>
+    </div>
+    <div class="cavans">
+        <img id="done" />
+    </div>
+</div>
+@section Scripts{
+<script src="~/lib/cropperjs/cropper.js"></script>
+<script type="text/javascript">
+    function each(arr, callback) {
+        var length = arr.length;
+        var i;
+        for (i = 0; i < length; i++) {
+            callback.call(arr, arr[i], i, arr);
+        }
+        return arr;
+    }
+
+    $(function () {
+        const image = document.getElementById('image');
+        const cropper = new Cropper(image, {
+            aspectRatio: 120 / 120,
+            viewMode: 2,
+            dragMode: "move",
+            minCanvasWidth: 60,
+            minCropBoxWidth: 120,
+            minCropBoxHeight: 120,
+            movable: true,
+            scalable: false,
+            zoomable: true,
+            cropBoxResizable: true,
+            preview: '.img-preview',
+            data: {
+                width: 120,
+                height: 120,
+            },
+            ready: function () {
+            },
+            crop(event) {
+                var data = event.detail;
+            },
+        });
+
+        $("#file_input").change(function () {
+            readURL(this);
+        });
+
+        function readURL(input) {
+            if (input.files && input.files[0]) {
+                var reader = new FileReader();
+
+                reader.onload = function (evt) {
+                    //$('#image').attr('src', e.target.result);
+                    var replaceSrc = evt.target.result;
+                    // 更换cropper的图片
+                    cropper.replace(replaceSrc, false);// 默认false，适应高度，不失真
+                }
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+
+        $("#btn_upload").on("click", function () {
+            var options = {
+                width: 120,
+                height: 120,
+                //minWidth: 120,
+                //minHeight: 120,
+                //maxWidth: 120,
+                //maxHeight: 120,
+                fillColor: '#fff',
+                imageSmoothingEnabled: true,
+                imageSmoothingQuality: 'high',
+            };
+            console.log(cropper.getCroppedCanvas(options));
+            var cas = cropper.getCroppedCanvas(options);
+            var base64url = cas.toDataURL('image/png');
+            cas.toBlob(function (e) {
+                //console.log(e);  //生成Blob的图片格式
+            })
+            //console.log(base64url); //生成base64图片的格式
+            //$('.cavans').html(cas)  //在body显示出canvas元素
+            $("#done").attr("src", base64url);
+
+            const formData = new FormData();
+
+            formData.append('avatar', base64url);
+            $.ajax('/api/image/upload', {
+                method: "POST",
+                data: formData,
+                processData: false,
+                contentType: false,
+                success() {
+                    console.log('Upload success');
+                },
+                error() {
+                    console.log('Upload error');
+                }
+            });
+        })
+    });
+</script>
+}
